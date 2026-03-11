@@ -16,7 +16,9 @@ npm.cmd run dev
 3. Set `Source` to `GitHub Actions`.
 4. Push to `main` again, or run the `Deploy GitHub Pages` workflow manually.
 
-The Vite config automatically uses the repository name as the production base path when the app is built by GitHub Actions, so the site works under `https://<your-user>.github.io/<repo-name>/`.
+The production build uses relative paths, so the site works under `https://<your-user>.github.io/<repo-name>/` without needing repository-specific environment variables.
+
+It also works if you build locally and upload the `dist` folder to GitHub Pages manually.
 
 ## Production build
 

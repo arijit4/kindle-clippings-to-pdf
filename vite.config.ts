@@ -7,14 +7,11 @@ import { viteSingleFile } from "vite-plugin-singlefile";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
-const githubRepositoryName = process.env.GITHUB_REPOSITORY?.split("/")[1];
 
 // https://vite.dev/config/
 export default defineConfig(({ mode }) => ({
-  base:
-    mode === "production" && githubRepositoryName
-      ? `/${githubRepositoryName}/`
-      : "/",
+  // Use relative URLs in production so the built HTML works from any GitHub Pages repo path.
+  base: mode === "production" ? "./" : "/",
   plugins: [react(), tailwindcss(), viteSingleFile()],
   resolve: {
     alias: {
