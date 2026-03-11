@@ -15,6 +15,24 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="./src/main.tsx"></script>
+    <script>
+      (function () {
+        var isLocalHost =
+          window.location.hostname === 'localhost' ||
+          window.location.hostname === '127.0.0.1';
+
+        if (!isLocalHost) {
+          var style = document.createElement('link');
+          style.rel = 'stylesheet';
+          style.href = './assets/app.css';
+          document.head.appendChild(style);
+        }
+
+        var entry = document.createElement('script');
+        entry.type = 'module';
+        entry.src = isLocalHost ? './src/main.tsx' : './assets/app.js';
+        document.body.appendChild(entry);
+      })();
+    </script>
   </body>
 </html>
