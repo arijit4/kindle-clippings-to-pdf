@@ -1,27 +1,22 @@
 # Kindle Notes to PDF
+A fully client-side application for exporting highlights and
+notes of your side loaded contents from your kindle.
 
-This app is ready to deploy on GitHub Pages.
+### Why this exists?
+Kindle does not support exporting notes for side-loaded
+contents. You have to manually get the `txt` file but
+the notes are then scrambled. Everything is into everything.
+Anybody likes that? Well, I don't. 
 
-## Local development
+There are a few workarounds available. Also there are some
+python scripts. But who wants to run codes? Let the machines
+do the machinery. You just drag-n-drop your `txt` file and 
+get your notes and annotations organized file by file.
 
-```bash
-npm.cmd install
-npm.cmd run dev
-```
-
-## GitHub Pages deployment
-
-1. Create a GitHub repository and push this code to the `main` branch.
-2. In GitHub, open `Settings > Pages`.
-3. Set `Source` to `GitHub Actions`.
-4. Push to `main` again, or run the `Deploy GitHub Pages` workflow manually.
-
-The production build uses relative paths, so the site works under `https://<your-user>.github.io/<repo-name>/` without needing repository-specific environment variables.
-
-It also works if you build locally and upload the `dist` folder to GitHub Pages manually.
-
-## Production build
-
-```bash
-npm.cmd run build
-```
+### Features
+1. Drag-n-drop and you're ready to go
+2. Notes and annotations are organized per book
+3. 3 themes are available. Though the `Kindle-style` theme gives
+you a feel like home, `Modern` is my personal fav.
+4. Note highlighting so that you can easily edit your notes
+on the fly
