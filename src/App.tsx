@@ -9,6 +9,8 @@ import { cn } from "./utils/cn";
 
 export type AppTheme = "light" | "dark" | "system";
 
+const SOURCE_CODE_URL = "https://github.com/arijit4/kindle-clippings-to-pdf";
+
 const themeOptions = [
   {
     id: "light",
@@ -110,12 +112,26 @@ export function App() {
     <div className="min-h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950">
       <header className="border-b border-slate-200/70 bg-white/70 backdrop-blur dark:border-slate-700/70 dark:bg-slate-900/70">
         <div className="mx-auto max-w-6xl px-4 py-5">
-          <div className="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div>
               <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Kindle Clippings to PDF</h1>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                 Convert <span className="font-medium">My Clippings.txt</span> into organized, per-book PDFs — fully client-side.
               </p>
+              <a
+                href={SOURCE_CODE_URL}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="mt-3 inline-flex items-center gap-2 rounded-full bg-slate-900 px-4 py-2 text-sm font-semibold text-white shadow-sm ring-1 ring-slate-900/20 transition-all hover:-translate-y-0.5 hover:bg-slate-800 hover:shadow-md dark:bg-slate-100 dark:text-slate-900 dark:ring-slate-100/20 dark:hover:bg-white"
+              >
+                <svg viewBox="0 0 24 24" aria-hidden="true" className="size-4">
+                  <path
+                    fill="currentColor"
+                    d="M12 2a10 10 0 0 0-3.16 19.49c.5.1.69-.22.69-.48v-1.7c-2.82.62-3.41-1.36-3.41-1.36-.46-1.18-1.13-1.49-1.13-1.49-.93-.64.07-.63.07-.63 1.03.08 1.57 1.06 1.57 1.06.92 1.57 2.41 1.12 3 .86.09-.67.36-1.12.65-1.38-2.25-.26-4.62-1.12-4.62-5a3.93 3.93 0 0 1 1.05-2.74 3.66 3.66 0 0 1 .1-2.7s.85-.27 2.79 1.04a9.73 9.73 0 0 1 5.08 0c1.94-1.31 2.79-1.04 2.79-1.04.38.95.42 1.97.1 2.7a3.93 3.93 0 0 1 1.05 2.74c0 3.89-2.37 4.74-4.63 4.99.37.31.7.92.7 1.86v2.76c0 .26.18.58.7.48A10 10 0 0 0 12 2Z"
+                  />
+                </svg>
+                <span>View and Star on GitHub</span>
+              </a>
             </div>
 
             <div className="flex flex-col gap-2 sm:items-end">
