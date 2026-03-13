@@ -1,5 +1,12 @@
 import type { BookGroup, KindleClip } from "../types";
 import type { PdfTheme } from "./pdfThemes";
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
+
+type ExportBookMetadata = {
+  title?: string;
+  author?: string;
+};
 
 function safeFileName(name: string) {
   const cleaned = name
@@ -433,14 +440,63 @@ function renderClipHtml(clip: KindleClip, theme: PdfTheme): string {
   return parts.join("\n");
 }
 
-function buildHtml(group: BookGroup, theme: PdfTheme): string {
-  const title = theme.formatTitle(group);
+function escapeRegex(value: string): string {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function removeTrailingAuthorFromTitle(title: string, author?: string): string {
+  const cleanTitle = title.trim();
+  const cleanAuthor = (author ?? "").replace(/^by\s+/i, "").trim();
+
+  if (!cleanTitle || !cleanAuthor) {
+    return cleanTitle;
+  }
+
+  const escapedAuthor = escapeRegex(cleanAuthor);
+  const patterns = [
+    new RegExp(`\\s*[\\-\\u2013\\u2014:]\\s*${escapedAuthor}\\s*$`, "i"),
+    new RegExp(`\\s*\\(\\s*${escapedAuthor}\\s*\\)\\s*$`, "i"),
+    new RegExp(`\\s+by\\s+${escapedAuthor}\\s*$`, "i"),
+  ];
+
+  let result = cleanTitle;
+  for (const pattern of patterns) {
+    result = result.replace(pattern, "");
+  }
+
+  return result.trim() || cleanTitle;
+}
+
+function resolveExportMetadata(group: BookGroup, metadata?: ExportBookMetadata) {
+  const title = metadata?.title?.trim() || group.title;
+  const author = metadata?.author?.trim() || group.author;
+
+  return {
+    title,
+    author,
+    displayTitle: removeTrailingAuthorFromTitle(title, author),
+  };
+}
+
+function buildHtml(
+  group: BookGroup,
+  theme: PdfTheme,
+  options?: { autoPrint?: boolean; metadata?: ExportBookMetadata },
+): string {
+  const metadata = resolveExportMetadata(group, options?.metadata);
+  const displayGroup = {
+    ...group,
+    title: metadata.displayTitle,
+    author: metadata.author,
+  };
+
+  const title = theme.formatTitle(displayGroup);
   const css = buildCss(theme);
   const clipsHtml = group.clips.map((clip) => renderClipHtml(clip, theme)).join("\n");
-  const authorText = group.author
+  const authorText = metadata.author
     ? theme.id === "kindle"
-      ? `by ${group.author.replace(/^by\s+/i, "")}`
-      : group.author
+      ? `by ${metadata.author.replace(/^by\s+/i, "")}`
+      : metadata.author
     : "";
   const authorHtml = authorText ? `<p class="author">${escapeHtml(authorText)}</p>` : "";
   const details = group as BookGroup & {
@@ -480,6 +536,16 @@ function buildHtml(group: BookGroup, theme: PdfTheme): string {
     <hr class="header-rule">
   `;
 
+  const autoPrintScript = options?.autoPrint === false
+    ? ""
+    : `
+  <script>
+    window.addEventListener('load', function () {
+      window.print();
+      window.addEventListener('afterprint', function () { window.close(); });
+    });
+  </script>`;
+
   return `<!DOCTYPE html>
 <html lang="">
 <head>
@@ -494,30 +560,183 @@ function buildHtml(group: BookGroup, theme: PdfTheme): string {
   <div class="clips">
     ${clipsHtml}
   </div>
-  <script>
-    window.addEventListener('load', function () {
-      window.print();
-      window.addEventListener('afterprint', function () { window.close(); });
-    });
-  </script>
+  ${autoPrintScript}
 </body>
 </html>`;
 }
 
-export function exportBookGroupToPdf(group: BookGroup, theme: PdfTheme) {
-  const html = buildHtml(group, theme);
+function isAndroidBrowser(): boolean {
+  return /Android/i.test(navigator.userAgent || "");
+}
+
+const A4_RENDER_WIDTH_PX = 794;
+
+function waitForImages(doc: Document): Promise<void> {
+  const images = Array.from(doc.images).filter((image) => !image.complete);
+
+  if (images.length === 0) {
+    return Promise.resolve();
+  }
+
+  return Promise.all(
+    images.map(
+      (image) =>
+        new Promise<void>((resolve) => {
+          const done = () => resolve();
+          image.addEventListener("load", done, { once: true });
+          image.addEventListener("error", done, { once: true });
+        }),
+    ),
+  ).then(() => undefined);
+}
+
+async function renderHtmlToCanvas(html: string): Promise<HTMLCanvasElement> {
+  const iframe = document.createElement("iframe");
+  iframe.setAttribute("aria-hidden", "true");
+  iframe.style.position = "fixed";
+  iframe.style.top = "0";
+  iframe.style.left = "-10000px";
+  iframe.style.width = `${A4_RENDER_WIDTH_PX}px`;
+  iframe.style.height = "1px";
+  iframe.style.opacity = "0";
+  iframe.style.pointerEvents = "none";
+  iframe.style.border = "0";
+
+  document.body.appendChild(iframe);
+
+  try {
+    const frameWindow = iframe.contentWindow;
+    const frameDocument = frameWindow?.document;
+
+    if (!frameWindow || !frameDocument) {
+      throw new Error("Unable to initialize Android PDF render frame.");
+    }
+
+    frameDocument.open();
+    frameDocument.write(html);
+    frameDocument.close();
+
+    await new Promise<void>((resolve) => frameWindow.requestAnimationFrame(() => resolve()));
+    await frameDocument.fonts.ready;
+    await waitForImages(frameDocument);
+
+    const root = frameDocument.documentElement;
+    const body = frameDocument.body;
+    const contentHeight = Math.max(
+      body.scrollHeight,
+      body.offsetHeight,
+      root.scrollHeight,
+      root.offsetHeight,
+    );
+
+    iframe.style.height = `${Math.max(contentHeight, 1)}px`;
+
+    return await html2canvas(body, {
+      backgroundColor: "#ffffff",
+      scale: Math.min(Math.max(window.devicePixelRatio || 1, 1), 2),
+      useCORS: true,
+      logging: false,
+      windowWidth: A4_RENDER_WIDTH_PX,
+      windowHeight: Math.max(contentHeight, 1),
+    });
+  } finally {
+    iframe.remove();
+  }
+}
+
+function saveCanvasAsPdf(canvas: HTMLCanvasElement, fileName: string, title: string) {
+  const doc = new jsPDF({
+    orientation: "p",
+    unit: "pt",
+    format: "a4",
+    compress: true,
+  });
+
+  doc.setDocumentProperties({ title });
+
+  const pageWidth = doc.internal.pageSize.getWidth();
+  const pageHeight = doc.internal.pageSize.getHeight();
+  const pageHeightPx = Math.floor((canvas.width * pageHeight) / pageWidth);
+  let offsetY = 0;
+  let pageIndex = 0;
+
+  while (offsetY < canvas.height) {
+    const sliceHeight = Math.min(pageHeightPx, canvas.height - offsetY);
+    const pageCanvas = document.createElement("canvas");
+    pageCanvas.width = canvas.width;
+    pageCanvas.height = sliceHeight;
+
+    const context = pageCanvas.getContext("2d");
+    if (!context) {
+      throw new Error("Unable to create canvas context for PDF export.");
+    }
+
+    context.fillStyle = "#ffffff";
+    context.fillRect(0, 0, pageCanvas.width, pageCanvas.height);
+    context.drawImage(
+      canvas,
+      0,
+      offsetY,
+      canvas.width,
+      sliceHeight,
+      0,
+      0,
+      pageCanvas.width,
+      pageCanvas.height,
+    );
+
+    if (pageIndex > 0) {
+      doc.addPage();
+    }
+
+    const renderHeight = (sliceHeight * pageWidth) / canvas.width;
+    doc.addImage(pageCanvas.toDataURL("image/jpeg", 0.92), "JPEG", 0, 0, pageWidth, renderHeight);
+
+    offsetY += sliceHeight;
+    pageIndex += 1;
+  }
+
+  doc.save(fileName);
+}
+
+async function exportBookGroupToPdfAndroid(group: BookGroup, theme: PdfTheme, metadata?: ExportBookMetadata) {
+  const exportMetadata = resolveExportMetadata(group, metadata);
+  const html = buildHtml(group, theme, { autoPrint: false, metadata });
+  const canvas = await renderHtmlToCanvas(html);
+  const fileName = safeFileName(
+    `${exportMetadata.title}${exportMetadata.author ? " - " + exportMetadata.author : ""}.pdf`,
+  );
+  saveCanvasAsPdf(canvas, fileName, exportMetadata.title);
+}
+
+function downloadHtmlFallback(group: BookGroup, html: string, metadata?: ExportBookMetadata) {
+  const exportMetadata = resolveExportMetadata(group, metadata);
+  const blob = new Blob([html], { type: "text/html;charset=utf-8" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = safeFileName(
+    `${exportMetadata.title}${exportMetadata.author ? " - " + exportMetadata.author : ""}.html`
+  );
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+export function exportBookGroupToPdf(group: BookGroup, theme: PdfTheme, metadata?: ExportBookMetadata) {
+  const html = buildHtml(group, theme, { metadata });
+
+  if (isAndroidBrowser()) {
+    void exportBookGroupToPdfAndroid(group, theme, metadata).catch((error) => {
+      console.error("Android PDF export failed; using HTML fallback", error);
+      downloadHtmlFallback(group, html, metadata);
+    });
+    return;
+  }
+
   const win = window.open("", "_blank");
   if (!win) {
     // Popup was blocked — fall back to downloading as HTML (user can open and print)
-    const blob = new Blob([html], { type: "text/html;charset=utf-8" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = safeFileName(
-      `${group.title}${group.author ? " - " + group.author : ""}.html`
-    );
-    a.click();
-    URL.revokeObjectURL(url);
+    downloadHtmlFallback(group, html, metadata);
     return;
   }
   win.document.write(html);

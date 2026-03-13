@@ -87,7 +87,7 @@ export const themes: PdfTheme[] = [
       if (clip.addedOnRaw) bits.push(clip.addedOnRaw);
       return bits.join(" · ");
     },
-    formatTitle: (g) => (g.author ? `${g.title} — ${g.author}` : g.title),
+    formatTitle: (g) => g.title,
   },
   {
     id: "modern",
@@ -113,7 +113,7 @@ export const themes: PdfTheme[] = [
       if (clip.addedOnRaw) bits.push(clip.addedOnRaw);
       return bits.join(" | ");
     },
-    formatTitle: (g) => (g.author ? `${g.title} - ${g.author}` : g.title),
+    formatTitle: (g) => g.title,
   },
 ];
 

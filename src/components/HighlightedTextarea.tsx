@@ -144,7 +144,7 @@ export function HighlightedTextarea({ value, onChange, placeholder, className }:
   return (
     <div
       className={cn(
-        "relative overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-slate-800",
+        "relative min-w-0 max-w-full overflow-hidden rounded-xl border bg-white shadow-sm dark:bg-slate-800",
         isFocused
           ? "border-slate-300 ring-2 ring-slate-200 dark:border-slate-500 dark:ring-slate-700"
           : "border-slate-200 dark:border-slate-700",
@@ -154,9 +154,9 @@ export function HighlightedTextarea({ value, onChange, placeholder, className }:
       <pre
         ref={overlayRef}
         aria-hidden
-        className="k-editor-scroll pointer-events-none absolute inset-0 z-0 m-0 overflow-auto whitespace-pre-wrap break-words p-3 font-mono text-[12px] leading-5 text-slate-700 dark:text-slate-200"
+        className="k-editor-scroll pointer-events-none absolute inset-0 z-0 m-0 max-w-full overflow-auto whitespace-pre-wrap break-words p-3 font-mono text-[12px] leading-5 text-slate-700 dark:text-slate-200"
       >
-        <code className="block" dangerouslySetInnerHTML={{ __html: `${highlighted}\n` }} />
+        <code className="block max-w-full break-words" dangerouslySetInnerHTML={{ __html: `${highlighted}\n` }} />
       </pre>
 
       <textarea
@@ -166,14 +166,23 @@ export function HighlightedTextarea({ value, onChange, placeholder, className }:
         onFocus={() => setIsFocused(true)}
         onBlur={() => setIsFocused(false)}
         placeholder={placeholder}
-        className="k-editor-scroll relative z-10 block h-80 w-full resize-y overflow-auto bg-transparent p-3 font-mono text-[12px] leading-5 text-transparent caret-blue-700 outline-none placeholder:text-slate-400 selection:bg-sky-300/35 selection:text-transparent dark:caret-amber-300 dark:placeholder:text-slate-500 dark:selection:bg-sky-700/35 dark:selection:text-transparent"
+        className="k-editor-scroll relative z-10 block h-80 min-w-0 w-full max-w-full resize-y overflow-auto bg-transparent p-3 font-mono text-[12px] leading-5 text-transparent caret-blue-700 outline-none placeholder:text-slate-400 selection:bg-sky-300/35 selection:text-transparent dark:caret-amber-300 dark:placeholder:text-slate-500 dark:selection:bg-sky-700/35 dark:selection:text-transparent"
         spellCheck={false}
       />
 
       <style>{`
         .k-editor-scroll {
+          max-width: 100%;
+          min-width: 0;
           scrollbar-width: thin;
           scrollbar-color: rgb(148, 163, 184) rgb(241, 245, 249);
+        }
+
+        .k-editor-scroll,
+        .k-editor-scroll code,
+        .k-editor-scroll textarea {
+          overflow-wrap: anywhere;
+          word-break: break-word;
         }
 
         .dark .k-editor-scroll {

@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { BookGroup } from "../types";
 import type { PdfThemeId } from "../utils/pdfThemes";
 import { getTheme } from "../utils/pdfThemes";
@@ -34,21 +34,15 @@ export function BookList({ groups, themeId }: { groups: BookGroup[]; themeId: Pd
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [pendingGroup]);
 
-  const confirmedGroup = useMemo(() => {
-    if (!pendingGroup) return null;
-
-    return {
-      ...pendingGroup,
-      title: draftTitle.trim() || pendingGroup.title,
-      author: draftAuthor.trim() || undefined,
-    };
-  }, [draftAuthor, draftTitle, pendingGroup]);
-
   const closeDialog = () => setPendingGroup(null);
 
   const confirmExport = () => {
-    if (!confirmedGroup) return;
-    exportBookGroupToPdf(confirmedGroup, theme);
+    if (!pendingGroup) return;
+
+    exportBookGroupToPdf(pendingGroup, theme, {
+      title: draftTitle.trim() || pendingGroup.title,
+      author: draftAuthor.trim() || undefined,
+    });
     setPendingGroup(null);
   };
 

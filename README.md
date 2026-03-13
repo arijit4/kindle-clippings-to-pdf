@@ -1,4 +1,6 @@
 # Kindle Notes to PDF
+[![Visitors](https://visitor-badge.laobi.icu/badge?page_id=arijit4.kindle-clippings-to-pdf)](https://visitor-badge.laobi.icu/badge?page_id=arijit4.kindle-clippings-to-pdf)
+
 A fully client-side application for exporting highlights and
 notes of your side loaded contents from your kindle.
 

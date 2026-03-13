@@ -10,6 +10,15 @@ import { cn } from "./utils/cn";
 export type AppTheme = "light" | "dark" | "system";
 
 const SOURCE_CODE_URL = "https://github.com/arijit4/kindle-clippings-to-pdf";
+const VISITOR_BADGE_URL =
+  "https://visitor-badge.laobi.icu/badge?page_id=arijit4.kindle-clippings-to-pdf";
+
+function isMobileDevice() {
+  const ua = navigator.userAgent || "";
+  const byUserAgent = /Android|iPhone|iPad|iPod|Mobile|Opera Mini|IEMobile/i.test(ua);
+  const byTouchScreen = navigator.maxTouchPoints > 1 && window.matchMedia("(max-width: 900px)").matches;
+  return byUserAgent || byTouchScreen;
+}
 
 const themeOptions = [
   {
@@ -102,6 +111,15 @@ export function App() {
   const [rawText, setRawText] = useState("");
   const [themeId, setThemeId] = useState<PdfThemeId>("minimal");
   const [appTheme, setAppTheme] = useAppTheme();
+  const [showMobileWarning, setShowMobileWarning] = useState(false);
+
+  useEffect(() => {
+    setShowMobileWarning(isMobileDevice());
+  }, []);
+
+  const dismissMobileWarning = () => {
+    setShowMobileWarning(false);
+  };
 
   const parsed = useMemo(() => {
     if (!rawText.trim()) return null;
@@ -113,7 +131,7 @@ export function App() {
       <header className="border-b border-slate-200/70 bg-white/70 backdrop-blur dark:border-slate-700/70 dark:bg-slate-900/70">
         <div className="mx-auto max-w-6xl px-4 py-5">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
+            <div className="flex flex-col items-start">
               <h1 className="text-xl font-semibold tracking-tight text-slate-900 dark:text-slate-100">Kindle Clippings to PDF</h1>
               <p className="mt-1 text-sm text-slate-600 dark:text-slate-400">
                 Convert <span className="font-medium">My Clippings.txt</span> into organized, per-book PDFs — fully client-side.
@@ -131,6 +149,15 @@ export function App() {
                   />
                 </svg>
                 <span>View and Star on GitHub</span>
+              </a>
+              <a
+                href={VISITOR_BADGE_URL}
+                target="_blank"
+                rel="noreferrer noopener"
+                className="mt-2 block"
+                aria-label="Project visitor count"
+              >
+                <img src={VISITOR_BADGE_URL} alt="Visitor count" className="h-5" loading="lazy" />
               </a>
             </div>
 
@@ -161,10 +188,10 @@ export function App() {
 
       <main className="mx-auto max-w-6xl px-4 py-8">
         <div className="grid gap-6 lg:grid-cols-2">
-          <section className="space-y-4">
+          <section className="min-w-0 space-y-4">
             <FileDrop onText={(t) => setRawText(t)} />
 
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+            <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
               <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="text-sm font-medium text-slate-900 dark:text-slate-100">Or paste clippings</div>
@@ -193,8 +220,8 @@ export function App() {
             </div>
           </section>
 
-          <section className="space-y-4">
-            <div className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
+          <section className="min-w-0 space-y-4">
+            <div className="min-w-0 rounded-xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-800">
               <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
                 <div>
                   <div className="text-sm font-medium text-slate-900 dark:text-slate-100">Export settings</div>
@@ -259,6 +286,36 @@ export function App() {
           Made with care and love for fellow readers. No AI was harmed.
         </div>
       </footer>
+
+      {showMobileWarning ? (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/45 p-4 backdrop-blur-sm"
+          onClick={dismissMobileWarning}
+        >
+          <div
+            role="dialog"
+            aria-modal="true"
+            aria-label="Mobile support notice"
+            className="w-full max-w-md rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-slate-700 dark:bg-slate-900"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="text-base font-semibold text-slate-900 dark:text-slate-100">Best on desktop</div>
+            <p className="mt-2 text-sm text-slate-600 dark:text-slate-400">
+              This app works best on desktops. The app may not work as intended on mobile phones.
+            </p>
+
+            <div className="mt-5 flex items-center justify-end gap-2">
+              <button
+                type="button"
+                className="inline-flex items-center justify-center rounded-lg bg-slate-900 px-3 py-2 text-sm font-medium text-white hover:bg-slate-800 dark:bg-slate-100 dark:text-slate-900 dark:hover:bg-slate-200"
+                onClick={dismissMobileWarning}
+              >
+                Continue
+              </button>
+            </div>
+          </div>
+        </div>
+      ) : null}
     </div>
   );
 }
